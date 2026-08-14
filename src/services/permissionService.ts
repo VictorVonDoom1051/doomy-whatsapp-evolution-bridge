@@ -8,12 +8,19 @@ export interface GroupPermissions {
 }
 
 const homeKeywords = [
-  'luz', 'luces', 'lamp', 'brightness', 'brillo',
-  'frigate', 'camera', 'cámara', 'video', 'grabadora',
-  'puerta', 'lock', 'cerradura', 'alarma', 'alarm',
-  'temperatura', 'clima', 'air', 'ventilador', 'fan',
-  'automatización', 'automation', 'escena', 'scene',
-  'encender', 'apagar', 'prender', 'off', 'on'
+  // Luces
+  'luz', 'luces', 'lamp', 'brightness', 'brillo', 'dimer',
+  // Frigate/Cámaras
+  'frigate', 'camera', 'cámara', 'video', 'grabadora', 'grabadora',
+  // Puertas/Cerraduras
+  'puerta', 'lock', 'cerradura', 'bloqueo',
+  // Alarmas
+  'alarma', 'alarm', 'sensor',
+  // Clima
+  'temperatura', 'clima', 'aire acondicionado', 'ventilador', 'fan', 'ac',
+  // Control específico (no genéricos como "on/off")
+  'encender luces', 'apagar luces', 'prender luces', 'apaga',
+  'controlar', 'activar', 'desactivar', 'switch'
 ];
 
 export function getGroupPermissions(groupId: string): GroupPermissions {

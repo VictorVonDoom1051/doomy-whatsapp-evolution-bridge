@@ -27,7 +27,10 @@ export async function processMessage(msg: NormalizedMessage) {
   const activation = extractActivation(msg.text || '');
   if (!activation.active) return;
   const cleanText = activation.cleanText || (msg.hasMedia ? 'Analiza el adjunto enviado.' : '');
-  if (!cleanText.trim()) return;
+  if (!cleanText.trim()) {
+    logger.warn({ groupId: msg.remoteJid, text: msg.text }, 'Mensaje vacío después de activación');
+    return;
+  }
 
   try {
     // Validar permisos del grupo
