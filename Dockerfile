@@ -17,7 +17,8 @@ COPY --from=build /app/dist ./dist
 COPY data ./data
 
 # Usuario sin privilegios
-RUN addgroup -S doomy && adduser -S doomy -G doomy
+RUN addgroup -S doomy && adduser -S doomy -G doomy && \
+    chown -R doomy:doomy /app
 USER doomy
 
 EXPOSE 3000
