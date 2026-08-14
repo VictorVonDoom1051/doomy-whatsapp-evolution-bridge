@@ -24,7 +24,15 @@ export async function processMessage(msg: NormalizedMessage) {
 
   if (config.allowedGroupIds.length && !config.allowedGroupIds.includes(msg.remoteJid)) return;
 
-  const activation = extractActivation(msg.text || '');
+  // Detectar activación: por trigger o por reply a un mensaje de Doomy
+  let activation = extractActivation(msg.text || '');
+
+  // Si no tiene trigger pero es un reply, activar automáticamente
+  if (!activation.active && msg.isReply) {
+    activation = { active: true, cleanText: msg.text || '' };
+    logger.info({ groupId: msg.remoteJid, quotedId: msg.quotedMessageId }, 'Reply detectado sin trigger');
+  }
+
   if (!activation.active) return;
   const cleanText = activation.cleanText || (msg.hasMedia ? 'Analiza el adjunto enviado.' : '');
   if (!cleanText.trim()) {

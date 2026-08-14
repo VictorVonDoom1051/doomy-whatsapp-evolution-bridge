@@ -20,6 +20,14 @@ export function normalizeEvolutionMessage(body: EvolutionWebhook): NormalizedMes
   const text = extractText(data);
   const messageType = data.messageType || data.message?.messageType || data.type;
   const hasMedia = Boolean(messageType && !['conversation', 'extendedTextMessage'].includes(messageType));
+
+  // Detectar si es un reply/quote a otro mensaje
+  const extendedTextMsg = data.message?.extendedTextMessage || data.extendedTextMessage;
+  const contextInfo = extendedTextMsg?.contextInfo || data.contextInfo;
+  const quotedMsg = contextInfo?.quotedMessage;
+  const isReply = Boolean(quotedMsg || contextInfo?.stanzaId);
+  const quotedMessageId = quotedMsg?.key?.id || contextInfo?.stanzaId;
+
   return {
     messageId: key.id || data.id || `${remoteJid}-${Date.now()}`,
     remoteJid,
@@ -30,6 +38,8 @@ export function normalizeEvolutionMessage(body: EvolutionWebhook): NormalizedMes
     text,
     messageType,
     raw: data,
-    hasMedia
+    hasMedia,
+    isReply,
+    quotedMessageId
   };
 }
