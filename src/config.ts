@@ -57,9 +57,9 @@ export const config = {
         if (groupId && perm) map.set(groupId, perm);
       });
     }
-    // Por defecto, grupos permitidos usan quotation_only
+    // Por defecto, grupos permitidos usan FULL_ACCESS (sin restricciones)
     allowed.forEach(gid => {
-      if (!map.has(gid)) map.set(gid, 'quotation_only');
+      if (!map.has(gid)) map.set(gid, 'full_access');
     });
     return map;
   })()
