@@ -5,7 +5,7 @@ import { RateLimiter } from '../utils/rateLimiter.js';
 import { detectToolHint } from '../utils/toolHint.js';
 import { conversationMemory } from './conversationMemory.js';
 import { askDoomy } from './doomyApi.js';
-import { sendPresence, sendText, trySendReaction } from './evolutionApi.js';
+import { sendPresence, sendText } from './evolutionApi.js';
 import { logInteraction } from './interactionLog.js';
 import { roleService } from './roleService.js';
 import { runLocalPlugin } from '../plugins/registry.js';
@@ -36,8 +36,7 @@ export async function processMessage(msg: NormalizedMessage) {
   if (isReplyToDoomy) {
     const reaction = selectAcknowledgementReaction(msg.text);
     if (reaction) {
-      const sent = await trySendReaction(msg.remoteJid, msg.messageId, reaction);
-      if (!sent) await sendText(msg.remoteJid, reaction);
+      await sendText(msg.remoteJid, reaction);
       conversationMemory.add(msg.remoteJid, {
         role: 'user',
         content: msg.text.trim(),
@@ -118,8 +117,7 @@ export async function processMessage(msg: NormalizedMessage) {
     const memoryAnswer = response.kind === 'reaction' ? `[Reacción ${response.reaction}]` : response.text;
 
     if (response.kind === 'reaction') {
-      const sent = await trySendReaction(msg.remoteJid, msg.messageId, response.reaction);
-      if (!sent) await sendText(msg.remoteJid, response.reaction);
+      await sendText(msg.remoteJid, response.reaction);
     } else {
       const sentMessageIds = await sendText(msg.remoteJid, response.text);
       conversationMemory.add(msg.remoteJid, {
