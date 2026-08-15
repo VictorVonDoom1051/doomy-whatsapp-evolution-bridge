@@ -24,6 +24,18 @@ export async function sendText(remoteJid: string, text: string) {
   return messageIds;
 }
 
+export async function sendDocument(remoteJid: string, base64: string, fileName: string, caption?: string) {
+  const response = await client.post(`/message/sendMedia/${config.evolution.instance}`, {
+    number: remoteJid,
+    mediatype: 'document',
+    mimetype: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    media: base64,
+    fileName,
+    caption: caption || ''
+  });
+  return response.data?.key?.id || response.data?.message?.key?.id || response.data?.data?.key?.id;
+}
+
 export async function sendPresence(remoteJid: string, presence: 'composing' | 'paused' = 'composing') {
   try {
     await client.post(`/chat/sendPresence/${config.evolution.instance}`, {
