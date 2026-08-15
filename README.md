@@ -33,6 +33,7 @@ Doomy Oficina API
 - División automática de respuestas largas.
 - Indicador de escribiendo, si el endpoint de Evolution está disponible.
 - Endpoint para configurar webhook automáticamente.
+- Interpretación de imágenes mediante Claude Vision y lectura local de PDF para buscar folios.
 
 ## Instalación local
 
@@ -63,6 +64,10 @@ ADMIN_USER_IDS=
 AMBIENT_MEMORY_ENABLED=true
 MEMORY_MAX_MESSAGES=30
 MEMORY_TTL_MINUTES=180
+ANTHROPIC_API_KEY=
+ANTHROPIC_MODEL=claude-sonnet-4-5
+MEDIA_MAX_BYTES=10485760
+PDF_MAX_CHARACTERS=60000
 ```
 
 ## Flujo de uso
