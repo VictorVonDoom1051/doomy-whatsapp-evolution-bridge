@@ -170,7 +170,7 @@ Los demás chats privados se ignoran.
 
 ### Asistente personal
 
-En el chat privado del propietario, Doomy puede guardar recordatorios, citas, compras y mandados:
+En el chat privado del propietario y en los grupos permitidos, Doomy puede guardar recordatorios, citas, compras y mandados. En los grupos, la agenda es compartida y el aviso se publica en el mismo grupo:
 
 ```txt
 Recuérdame mañana a las 9 llamar a Juan
