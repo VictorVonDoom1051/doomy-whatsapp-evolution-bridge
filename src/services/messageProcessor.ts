@@ -27,7 +27,11 @@ export async function processMessage(msg: NormalizedMessage) {
 
   // Detectar activación: por trigger o por reply a un mensaje de Doomy
   let activation = extractActivation(msg.text || '');
-  const isReplyToDoomy = msg.isReply && conversationMemory.isReplyToAssistant(msg.remoteJid, msg.quotedText);
+  const isReplyToDoomy = msg.isReply && conversationMemory.isReplyToAssistant(
+    msg.remoteJid,
+    msg.quotedText,
+    msg.quotedMessageId
+  );
 
   if (isReplyToDoomy) {
     const reaction = selectAcknowledgementReaction(msg.text);
@@ -112,13 +116,19 @@ export async function processMessage(msg: NormalizedMessage) {
 
     const response = parseDoomyResponse(answer);
     const memoryAnswer = response.kind === 'reaction' ? `[Reacción ${response.reaction}]` : response.text;
-    conversationMemory.add(msg.remoteJid, { role: 'assistant', content: memoryAnswer, at: new Date().toISOString(), source: 'assistant' });
 
     if (response.kind === 'reaction') {
       const sent = await trySendReaction(msg.remoteJid, msg.messageId, response.reaction);
       if (!sent) await sendText(msg.remoteJid, response.reaction);
     } else {
-      await sendText(msg.remoteJid, response.text);
+      const sentMessageIds = await sendText(msg.remoteJid, response.text);
+      conversationMemory.add(msg.remoteJid, {
+        role: 'assistant',
+        content: memoryAnswer,
+        at: new Date().toISOString(),
+        source: 'assistant',
+        messageId: sentMessageIds.at(-1)
+      });
     }
 
     logInteraction({ at: new Date().toISOString(), groupId: msg.remoteJid, senderId: msg.senderId, senderName: msg.senderName, question: cleanText, answer: memoryAnswer, toolHint, ms: Date.now() - started });

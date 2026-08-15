@@ -61,3 +61,32 @@ test('reconoce cuando el texto citado pertenece a una respuesta reciente de Doom
   assert.equal(memory.isReplyToAssistant('equipo@g.us', 'Ya quedó lista la cotización.'), true);
   assert.equal(memory.isReplyToAssistant('equipo@g.us', 'Mensaje de otra persona'), false);
 });
+
+test('reconoce una respuesta de Doomy por el ID del mensaje aunque falte el texto citado', () => {
+  const now = Date.parse('2026-08-14T18:00:00.000Z');
+  const group = 'equipo@g.us';
+  const memory = new ConversationMemory(30, 60_000, () => now);
+  memory.add(group, {
+    role: 'assistant',
+    content: 'Qué buena noticia! Ya las estoy usando 😁',
+    at: new Date(now).toISOString(),
+    source: 'assistant',
+    messageId: 'DOOMY-MESSAGE-123'
+  });
+
+  assert.equal(memory.isReplyToAssistant(group, undefined, 'DOOMY-MESSAGE-123'), true);
+});
+
+test('tolera diferencias de acentos y variantes Unicode al comparar el texto citado', () => {
+  const now = Date.parse('2026-08-14T18:00:00.000Z');
+  const group = 'equipo@g.us';
+  const memory = new ConversationMemory(30, 60_000, () => now);
+  memory.add(group, {
+    role: 'assistant',
+    content: '¡Qué buena noticia! 😁️',
+    at: new Date(now).toISOString(),
+    source: 'assistant'
+  });
+
+  assert.equal(memory.isReplyToAssistant(group, '¡que buena noticia! 😁'), true);
+});

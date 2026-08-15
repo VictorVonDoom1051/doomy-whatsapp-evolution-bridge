@@ -7,6 +7,7 @@ export type MemoryMsg = {
   senderId?: string;
   senderName?: string;
   source?: 'ambient' | 'direct' | 'assistant';
+  messageId?: string;
 };
 
 export class ConversationMemory {
@@ -36,11 +37,16 @@ export class ConversationMemory {
     this.mem.set(groupId, arr);
   }
 
-  isReplyToAssistant(groupId: string, quotedText?: string): boolean {
+  isReplyToAssistant(groupId: string, quotedText?: string, quotedMessageId?: string): boolean {
+    const messages = this.get(groupId);
+    if (quotedMessageId && messages.some(msg => msg.role === 'assistant' && msg.messageId === quotedMessageId)) {
+      return true;
+    }
+
     const target = normalizeForComparison(quotedText);
     if (!target) return false;
 
-    return this.get(groupId).some(msg => {
+    return messages.some(msg => {
       if (msg.role !== 'assistant') return false;
       return normalizeForComparison(msg.content) === target;
     });
@@ -49,5 +55,11 @@ export class ConversationMemory {
 export const conversationMemory = new ConversationMemory();
 
 function normalizeForComparison(value?: string): string {
-  return (value || '').replace(/\s+/g, ' ').trim();
+  return (value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[\uFE0E\uFE0F]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
 }

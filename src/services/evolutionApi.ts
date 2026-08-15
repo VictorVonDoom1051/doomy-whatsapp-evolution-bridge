@@ -10,12 +10,18 @@ const client = axios.create({
 });
 
 export async function sendText(remoteJid: string, text: string) {
+  const messageIds: string[] = [];
   for (const part of splitMessage(text)) {
-    await client.post(`/message/sendText/${config.evolution.instance}`, {
+    const response = await client.post(`/message/sendText/${config.evolution.instance}`, {
       number: remoteJid,
       text: part
     });
+    const messageId = response.data?.key?.id
+      || response.data?.message?.key?.id
+      || response.data?.data?.key?.id;
+    if (messageId) messageIds.push(messageId);
   }
+  return messageIds;
 }
 
 export async function sendPresence(remoteJid: string, presence: 'composing' | 'paused' = 'composing') {
