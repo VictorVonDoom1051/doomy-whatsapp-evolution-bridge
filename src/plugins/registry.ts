@@ -15,7 +15,9 @@ const plugins: DoomyPlugin[] = [
 ];
 
 export async function runLocalPlugin(text: string, ctx: { groupId: string; senderId: string; role: string }) {
-  if (!ctx.groupId.endsWith('@g.us') && ctx.role === 'admin') {
+  // En privado sólo el propietario puede usar la agenda. En los grupos permitidos,
+  // la agenda es compartida y los avisos regresan al mismo grupo que los creó.
+  if (ctx.groupId.endsWith('@g.us') || ctx.role === 'admin') {
     const personal = await handlePersonalCommand(text, ctx.groupId);
     if (personal.handled) return personal;
   }
