@@ -21,6 +21,12 @@ export const config = {
     apiUrl: process.env.DOOMY_API_URL || '',
     apiKey: process.env.DOOMY_API_KEY || ''
   },
+  anthropic: {
+    apiKey: process.env.ANTHROPIC_API_KEY || '',
+    model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-5'
+  },
+  mediaMaxBytes: num(process.env.MEDIA_MAX_BYTES, 10 * 1024 * 1024),
+  pdfMaxCharacters: num(process.env.PDF_MAX_CHARACTERS, 60000),
   botName: process.env.BOT_NAME || 'Doomy',
   activationWords: list(process.env.ACTIVATION_WORDS) || ['@Doomy', 'Doomy', 'oye Doomy', '/doom'],
   allowedGroupIds: list(process.env.ALLOWED_GROUP_IDS),
