@@ -26,12 +26,18 @@ export async function handlePersonalCommand(text: string, ownerId: string, now =
   const errandDone = clean.match(/^(?:marca|marcar|quita|elimina)\s+(.+?)(?:\s+como\s+(?:terminado|hecho|listo))?(?:\s+de\s+(?:mandados|pendientes))?$/i);
   if (errandDone && /(?:terminado|hecho|listo|mandados|pendientes)/i.test(clean)) return complete(ownerId, 'errand', errandDone[1]);
 
-  if (/^(?:recuerdame|recuérdame)\b/i.test(clean)) return addTimed(ownerId, 'reminder', clean.replace(/^(?:recuerdame|recuérdame)\s+/i, ''), now);
+  const reminderExpression = extractReminderExpression(clean);
+  if (reminderExpression) return addTimed(ownerId, 'reminder', reminderExpression, now);
   if (/^(?:agenda|agendar|crea una cita|crear una cita)\b/i.test(clean)) {
     return addTimed(ownerId, 'appointment', clean.replace(/^(?:agenda|agendar|crea una cita|crear una cita)\s+/i, ''), now);
   }
 
   return { handled: false };
+}
+
+export function extractReminderExpression(text: string): string | null {
+  const match = text.match(/(?:recuerdame|recuérdame)\s+(.+)$/i);
+  return match?.[1]?.trim() || null;
 }
 
 async function addSimple(ownerId: string, kind: PersonalItemKind, title: string, label: string): Promise<PersonalCommandResult> {

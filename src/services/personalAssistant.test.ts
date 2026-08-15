@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { parseSpanishDateTime } from './personalAssistant.js';
+import { extractReminderExpression, parseSpanishDateTime } from './personalAssistant.js';
 
 const now = new Date('2026-08-15T16:00:00.000Z'); // 10:00 en Ciudad de México
 
@@ -30,4 +30,14 @@ test('interpreta el tiempo relativo al final de la petición', () => {
   const parsed = parseSpanishDateTime('tomar agua en 2 horas', now);
   assert.equal(parsed?.title, 'tomar agua');
   assert.equal(parsed?.date.toISOString(), '2026-08-15T18:00:00.000Z');
+});
+
+test('detecta un recordatorio aunque exista una frase antes de la orden', () => {
+  const expression = extractReminderExpression(
+    'Ya puedes dar recordatorios, recuérdame en 5 minutos revisar la campaña de Megacable para que no se me olvide'
+  );
+  assert.equal(expression, 'en 5 minutos revisar la campaña de Megacable para que no se me olvide');
+  const parsed = parseSpanishDateTime(expression!, now);
+  assert.equal(parsed?.title, 'revisar la campaña de Megacable para que no se me olvide');
+  assert.equal(parsed?.date.toISOString(), '2026-08-15T16:05:00.000Z');
 });
