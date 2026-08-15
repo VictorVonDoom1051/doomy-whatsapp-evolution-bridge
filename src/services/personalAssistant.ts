@@ -36,7 +36,7 @@ export async function handlePersonalCommand(text: string, ownerId: string, now =
 }
 
 export function extractReminderExpression(text: string): string | null {
-  const match = text.match(/(?:recuerdame|recuérdame|recuerdanos|recuérdanos)\s+(.+)$/i);
+  const match = text.match(/(?:recuerdame|recuérdame|recuerdanos|recuérdanos|recuerdale|recuérdale|recuerdales|recuérdales)\s+(.+)$/i);
   return match?.[1]?.trim() || null;
 }
 
@@ -85,12 +85,187 @@ async function addTimed(ownerId: string, kind: PersonalItemKind, expression: str
 export function parseSpanishDateTime(expression: string, now = new Date()): { title: string; date: Date } | null {
   const relativePattern = '(?:en|dentro de)\\s+(\\d+)\\s+(minutos?|horas?|d[ií]as?|mes(?:es)?)';
   const relativeFirst = expression.match(new RegExp(`^${relativePattern}\\s+(.+)$`, 'i'));
-  const relativeLast = expression.match(new RegExp(`^(.+?)\\s+${relativePattern}$`, 'i'));
-  if (relativeFirst || relativeLast) {
-    const match = relativeFirst || relativeLast!;
+  const relativeLast = expression.match(new RegExp(`^(.+?)\\s+${relativePattern}import { buildNotifications, personalStore, type PersonalItemKind, type Recurrence } from './personalStore.js';
+
+export interface PersonalCommandResult { handled: boolean; response?: string }
+
+export async function handlePersonalCommand(text: string, ownerId: string, now = new Date()): Promise<PersonalCommandResult> {
+  const clean = text.trim();
+  const normalized = normalize(clean);
+
+  const shoppingAdd = clean.match(/^(?:agrega|añade|anota)\s+(.+?)\s+(?:a|en)\s+(?:la\s+)?(?:lista\s+de\s+)?compras?$/i);
+  if (shoppingAdd) return addSimple(ownerId, 'shopping', shoppingAdd[1], 'Agregado a compras');
+
+  const errandAdd = clean.match(/^(?:agrega|añade|anota)\s+(.+?)\s+(?:a|en)\s+(?:la\s+lista\s+de\s+)?(?:mandados|pendientes)$/i);
+  if (errandAdd) return addSimple(ownerId, 'errand', errandAdd[1], 'Mandado anotado');
+
+  if (/^(?:que|qué|muestra|ver|dime).*(?:lista de )?compras/.test(normalized) || normalized === 'lista de compras') {
+    return showList(ownerId, 'shopping', 'Lista de compras');
+  }
+  if (/^(?:que|qué|muestra|ver|dime).*(?:mandados|pendientes)/.test(normalized) || /^(?:mandados|pendientes)$/.test(normalized)) {
+    return showList(ownerId, 'errand', 'Mandados pendientes');
+  }
+  if (/^(?:que|qué|muestra|ver|dime).*(?:citas|agenda)/.test(normalized)) return showTimed(ownerId, 'appointment', 'Próximas citas');
+  if (/^(?:que|qué|muestra|ver|dime).*recordatorios/.test(normalized)) return showTimed(ownerId, 'reminder', 'Recordatorios');
+
+  const shoppingDone = clean.match(/^(?:marca|marcar|quita|elimina)\s+(.+?)(?:\s+como\s+(?:comprado|listo))?\s+(?:de\s+)?(?:la\s+)?(?:lista\s+de\s+)?compras?$/i);
+  if (shoppingDone) return complete(ownerId, 'shopping', shoppingDone[1]);
+  const errandDone = clean.match(/^(?:marca|marcar|quita|elimina)\s+(.+?)(?:\s+como\s+(?:terminado|hecho|listo))?(?:\s+de\s+(?:mandados|pendientes))?$/i);
+  if (errandDone && /(?:terminado|hecho|listo|mandados|pendientes)/i.test(clean)) return complete(ownerId, 'errand', errandDone[1]);
+
+  const reminderExpression = extractReminderExpression(clean);
+  if (reminderExpression) return addTimed(ownerId, 'reminder', reminderExpression, now);
+  if (/^(?:agenda|agendar|crea una cita|crear una cita)\b/i.test(clean)) {
+    return addTimed(ownerId, 'appointment', clean.replace(/^(?:agenda|agendar|crea una cita|crear una cita)\s+/i, ''), now);
+  }
+
+  return { handled: false };
+}
+
+export function extractReminderExpression(text: string): string | null {
+  const match = text.match(/(?:recuerdame|recuérdame|recuerdanos|recuérdanos|recuerdale|recuérdale|recuerdales|recuérdales)\s+(.+)$/i);
+  return match?.[1]?.trim() || null;
+}
+
+async function addSimple(ownerId: string, kind: PersonalItemKind, title: string, label: string): Promise<PersonalCommandResult> {
+  await personalStore.add({ ownerId, kind, title: title.trim(), notifications: [] });
+  return { handled: true, response: `${label}: ${title.trim()} ✅` };
+}
+
+async function showList(ownerId: string, kind: PersonalItemKind, label: string): Promise<PersonalCommandResult> {
+  const items = await personalStore.list(ownerId, kind);
+  return { handled: true, response: items.length ? `${label}:\n${items.map((item, index) => `${index + 1}. ${item.title}`).join('\n')}` : `${label}: está vacía.` };
+}
+
+async function showTimed(ownerId: string, kind: PersonalItemKind, label: string): Promise<PersonalCommandResult> {
+  const items = (await personalStore.list(ownerId, kind)).sort((a, b) => Date.parse(a.dueAt || '') - Date.parse(b.dueAt || ''));
+  return {
+    handled: true,
+    response: items.length
+      ? `${label}:\n${items.map((item, index) => `${index + 1}. ${item.title} — ${formatDate(item.dueAt!)}`).join('\n')}`
+      : `${label}: no tienes ninguno pendiente.`
+  };
+}
+
+async function complete(ownerId: string, kind: PersonalItemKind, title: string): Promise<PersonalCommandResult> {
+  const item = await personalStore.completeByTitle(ownerId, kind, title.trim());
+  return { handled: true, response: item ? `Listo, marqué “${item.title}” como terminado ✅` : `No encontré “${title.trim()}” en esa lista.` };
+}
+
+async function addTimed(ownerId: string, kind: PersonalItemKind, expression: string, now: Date): Promise<PersonalCommandResult> {
+  const parsed = parseSpanishDateTime(expression, now);
+  if (!parsed) return { handled: true, response: '¿Para qué día y hora lo programo? Por ejemplo: “mañana a las 9”.' };
+  const recurrence = parseRecurrence(expression);
+  const item = await personalStore.add({
+    ownerId,
+    kind,
+    title: parsed.title,
+    dueAt: parsed.date.toISOString(),
+    recurrence,
+    notifications: buildNotifications(kind, parsed.date, now)
+  });
+  const prefix = kind === 'appointment' ? 'Cita agendada' : 'Recordatorio creado';
+  const recurring = item.recurrence ? ` (${recurrenceLabel(item.recurrence)})` : '';
+  return { handled: true, response: `${prefix}: ${item.title}, ${formatDate(item.dueAt!)}${recurring} ✅` };
+}
+
+export function parseSpanishDateTime(expression: string, now = new Date()): { title: string; date: Date } | null {
+  const relativePattern = '(?:en|dentro de)\\s+(\\d+)\\s+(minutos?|horas?|d[ií]as?|mes(?:es)?)';
+  const relativeFirst = expression.match(new RegExp(`^${relativePattern}\\s+(.+)$`, 'i'));
+, 'i'));
+  const relativeMiddle = expression.match(new RegExp(`^(.+?)\\s+${relativePattern}\\s+(.+)import { buildNotifications, personalStore, type PersonalItemKind, type Recurrence } from './personalStore.js';
+
+export interface PersonalCommandResult { handled: boolean; response?: string }
+
+export async function handlePersonalCommand(text: string, ownerId: string, now = new Date()): Promise<PersonalCommandResult> {
+  const clean = text.trim();
+  const normalized = normalize(clean);
+
+  const shoppingAdd = clean.match(/^(?:agrega|añade|anota)\s+(.+?)\s+(?:a|en)\s+(?:la\s+)?(?:lista\s+de\s+)?compras?$/i);
+  if (shoppingAdd) return addSimple(ownerId, 'shopping', shoppingAdd[1], 'Agregado a compras');
+
+  const errandAdd = clean.match(/^(?:agrega|añade|anota)\s+(.+?)\s+(?:a|en)\s+(?:la\s+lista\s+de\s+)?(?:mandados|pendientes)$/i);
+  if (errandAdd) return addSimple(ownerId, 'errand', errandAdd[1], 'Mandado anotado');
+
+  if (/^(?:que|qué|muestra|ver|dime).*(?:lista de )?compras/.test(normalized) || normalized === 'lista de compras') {
+    return showList(ownerId, 'shopping', 'Lista de compras');
+  }
+  if (/^(?:que|qué|muestra|ver|dime).*(?:mandados|pendientes)/.test(normalized) || /^(?:mandados|pendientes)$/.test(normalized)) {
+    return showList(ownerId, 'errand', 'Mandados pendientes');
+  }
+  if (/^(?:que|qué|muestra|ver|dime).*(?:citas|agenda)/.test(normalized)) return showTimed(ownerId, 'appointment', 'Próximas citas');
+  if (/^(?:que|qué|muestra|ver|dime).*recordatorios/.test(normalized)) return showTimed(ownerId, 'reminder', 'Recordatorios');
+
+  const shoppingDone = clean.match(/^(?:marca|marcar|quita|elimina)\s+(.+?)(?:\s+como\s+(?:comprado|listo))?\s+(?:de\s+)?(?:la\s+)?(?:lista\s+de\s+)?compras?$/i);
+  if (shoppingDone) return complete(ownerId, 'shopping', shoppingDone[1]);
+  const errandDone = clean.match(/^(?:marca|marcar|quita|elimina)\s+(.+?)(?:\s+como\s+(?:terminado|hecho|listo))?(?:\s+de\s+(?:mandados|pendientes))?$/i);
+  if (errandDone && /(?:terminado|hecho|listo|mandados|pendientes)/i.test(clean)) return complete(ownerId, 'errand', errandDone[1]);
+
+  const reminderExpression = extractReminderExpression(clean);
+  if (reminderExpression) return addTimed(ownerId, 'reminder', reminderExpression, now);
+  if (/^(?:agenda|agendar|crea una cita|crear una cita)\b/i.test(clean)) {
+    return addTimed(ownerId, 'appointment', clean.replace(/^(?:agenda|agendar|crea una cita|crear una cita)\s+/i, ''), now);
+  }
+
+  return { handled: false };
+}
+
+export function extractReminderExpression(text: string): string | null {
+  const match = text.match(/(?:recuerdame|recuérdame|recuerdanos|recuérdanos|recuerdale|recuérdale|recuerdales|recuérdales)\s+(.+)$/i);
+  return match?.[1]?.trim() || null;
+}
+
+async function addSimple(ownerId: string, kind: PersonalItemKind, title: string, label: string): Promise<PersonalCommandResult> {
+  await personalStore.add({ ownerId, kind, title: title.trim(), notifications: [] });
+  return { handled: true, response: `${label}: ${title.trim()} ✅` };
+}
+
+async function showList(ownerId: string, kind: PersonalItemKind, label: string): Promise<PersonalCommandResult> {
+  const items = await personalStore.list(ownerId, kind);
+  return { handled: true, response: items.length ? `${label}:\n${items.map((item, index) => `${index + 1}. ${item.title}`).join('\n')}` : `${label}: está vacía.` };
+}
+
+async function showTimed(ownerId: string, kind: PersonalItemKind, label: string): Promise<PersonalCommandResult> {
+  const items = (await personalStore.list(ownerId, kind)).sort((a, b) => Date.parse(a.dueAt || '') - Date.parse(b.dueAt || ''));
+  return {
+    handled: true,
+    response: items.length
+      ? `${label}:\n${items.map((item, index) => `${index + 1}. ${item.title} — ${formatDate(item.dueAt!)}`).join('\n')}`
+      : `${label}: no tienes ninguno pendiente.`
+  };
+}
+
+async function complete(ownerId: string, kind: PersonalItemKind, title: string): Promise<PersonalCommandResult> {
+  const item = await personalStore.completeByTitle(ownerId, kind, title.trim());
+  return { handled: true, response: item ? `Listo, marqué “${item.title}” como terminado ✅` : `No encontré “${title.trim()}” en esa lista.` };
+}
+
+async function addTimed(ownerId: string, kind: PersonalItemKind, expression: string, now: Date): Promise<PersonalCommandResult> {
+  const parsed = parseSpanishDateTime(expression, now);
+  if (!parsed) return { handled: true, response: '¿Para qué día y hora lo programo? Por ejemplo: “mañana a las 9”.' };
+  const recurrence = parseRecurrence(expression);
+  const item = await personalStore.add({
+    ownerId,
+    kind,
+    title: parsed.title,
+    dueAt: parsed.date.toISOString(),
+    recurrence,
+    notifications: buildNotifications(kind, parsed.date, now)
+  });
+  const prefix = kind === 'appointment' ? 'Cita agendada' : 'Recordatorio creado';
+  const recurring = item.recurrence ? ` (${recurrenceLabel(item.recurrence)})` : '';
+  return { handled: true, response: `${prefix}: ${item.title}, ${formatDate(item.dueAt!)}${recurring} ✅` };
+}
+
+export function parseSpanishDateTime(expression: string, now = new Date()): { title: string; date: Date } | null {
+  const relativePattern = '(?:en|dentro de)\\s+(\\d+)\\s+(minutos?|horas?|d[ií]as?|mes(?:es)?)';
+  const relativeFirst = expression.match(new RegExp(`^${relativePattern}\\s+(.+)$`, 'i'));
+, 'i'));
+  if (relativeFirst || relativeLast || relativeMiddle) {
+    const match = relativeFirst || relativeLast || relativeMiddle!;
     const amount = Number(relativeFirst ? match[1] : match[2]);
     const unit = normalize(relativeFirst ? match[2] : match[3]);
-    const title = (relativeFirst ? match[3] : match[1]).trim();
+    const title = (relativeFirst ? match[3] : relativeMiddle ? `${match[1]} ${match[4]}` : match[1]).trim();
     if (!amount || !title) return null;
     if (unit.startsWith('mes')) {
       const date = new Date(now);
