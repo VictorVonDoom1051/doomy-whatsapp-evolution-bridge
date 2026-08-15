@@ -36,7 +36,7 @@ export async function handlePersonalCommand(text: string, ownerId: string, now =
 }
 
 export function extractReminderExpression(text: string): string | null {
-  const match = text.match(/(?:recuerdame|recuérdame)\s+(.+)$/i);
+  const match = text.match(/(?:recuerdame|recuérdame|recuerdanos|recuérdanos)\s+(.+)$/i);
   return match?.[1]?.trim() || null;
 }
 
