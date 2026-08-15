@@ -53,3 +53,8 @@ test('interpreta un recordatorio mensual con día y hora', () => {
   assert.equal(parsed?.title, 'pagar la tarjeta');
   assert.equal(parsed?.date.toISOString(), '2026-08-20T15:00:00.000Z');
 });
+
+test('detecta recordatorios compartidos escritos como recuérdanos', () => {
+  const expression = extractReminderExpression('Doomy recuérdanos en 5 minutos revisar el deploy');
+  assert.equal(expression, 'en 5 minutos revisar el deploy');
+});
