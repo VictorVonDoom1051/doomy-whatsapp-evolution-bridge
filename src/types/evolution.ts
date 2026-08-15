@@ -16,4 +16,5 @@ export interface NormalizedMessage {
   hasMedia: boolean;
   isReply?: boolean;           // True si es respuesta a otro mensaje (reply/quote)
   quotedMessageId?: string;    // ID del mensaje que fue respondido
+  quotedText?: string;         // Contenido del mensaje citado, cuando Evolution lo incluye
 }

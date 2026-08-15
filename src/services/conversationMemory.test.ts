@@ -47,3 +47,17 @@ test('respeta el máximo de mensajes por grupo', () => {
 
   assert.deepEqual(memory.get('equipo@g.us').map(message => message.content), ['dos', 'tres']);
 });
+
+test('reconoce cuando el texto citado pertenece a una respuesta reciente de Doomy', () => {
+  const now = Date.parse('2026-08-14T18:00:00.000Z');
+  const memory = new ConversationMemory(30, 60 * 60 * 1000, () => now);
+  memory.add('equipo@g.us', {
+    role: 'assistant',
+    content: 'Ya quedó lista la cotización.',
+    at: new Date(now).toISOString(),
+    source: 'assistant'
+  });
+
+  assert.equal(memory.isReplyToAssistant('equipo@g.us', 'Ya quedó lista la cotización.'), true);
+  assert.equal(memory.isReplyToAssistant('equipo@g.us', 'Mensaje de otra persona'), false);
+});

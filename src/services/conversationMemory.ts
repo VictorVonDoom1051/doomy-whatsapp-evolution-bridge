@@ -35,5 +35,19 @@ export class ConversationMemory {
     const arr = [...this.get(groupId), msg].slice(-this.maxMessages);
     this.mem.set(groupId, arr);
   }
+
+  isReplyToAssistant(groupId: string, quotedText?: string): boolean {
+    const target = normalizeForComparison(quotedText);
+    if (!target) return false;
+
+    return this.get(groupId).some(msg => {
+      if (msg.role !== 'assistant') return false;
+      return normalizeForComparison(msg.content) === target;
+    });
+  }
 }
 export const conversationMemory = new ConversationMemory();
+
+function normalizeForComparison(value?: string): string {
+  return (value || '').replace(/\s+/g, ' ').trim();
+}

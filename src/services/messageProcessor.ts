@@ -11,7 +11,7 @@ import { roleService } from './roleService.js';
 import { runLocalPlugin } from '../plugins/registry.js';
 import { canProcessMessage, getGroupPermissions } from './permissionService.js';
 import { logger } from '../utils/logger.js';
-import { parseDoomyResponse } from '../utils/reaction.js';
+import { parseDoomyResponse, selectAcknowledgementReaction } from '../utils/reaction.js';
 
 const processed = new Set<string>();
 const limiter = new RateLimiter(config.rateLimitWindowSeconds * 1000, config.rateLimitMaxMessages);
@@ -27,9 +27,27 @@ export async function processMessage(msg: NormalizedMessage) {
 
   // Detectar activación: por trigger o por reply a un mensaje de Doomy
   let activation = extractActivation(msg.text || '');
+  const isReplyToDoomy = msg.isReply && conversationMemory.isReplyToAssistant(msg.remoteJid, msg.quotedText);
+
+  if (isReplyToDoomy) {
+    const reaction = selectAcknowledgementReaction(msg.text);
+    if (reaction) {
+      const sent = await trySendReaction(msg.remoteJid, msg.messageId, reaction);
+      if (!sent) await sendText(msg.remoteJid, reaction);
+      conversationMemory.add(msg.remoteJid, {
+        role: 'user',
+        content: msg.text.trim(),
+        at: new Date().toISOString(),
+        senderId: msg.senderId,
+        senderName: msg.senderName,
+        source: 'direct'
+      });
+      return;
+    }
+  }
 
   // Si no tiene trigger pero es un reply, activar automáticamente
-  if (!activation.active && msg.isReply) {
+  if (!activation.active && isReplyToDoomy) {
     activation = { active: true, cleanText: msg.text || '' };
     logger.info({ groupId: msg.remoteJid, quotedId: msg.quotedMessageId }, 'Reply detectado sin trigger');
   }
