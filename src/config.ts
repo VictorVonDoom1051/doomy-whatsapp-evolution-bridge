@@ -28,7 +28,9 @@ export const config = {
   webhookSecret: process.env.WEBHOOK_SECRET || '',
   rateLimitWindowSeconds: num(process.env.RATE_LIMIT_WINDOW_SECONDS, 20),
   rateLimitMaxMessages: num(process.env.RATE_LIMIT_MAX_MESSAGES, 5),
-  memoryMaxMessages: num(process.env.MEMORY_MAX_MESSAGES, 12),
+  memoryMaxMessages: num(process.env.MEMORY_MAX_MESSAGES, 30),
+  memoryTtlMinutes: num(process.env.MEMORY_TTL_MINUTES, 180),
+  ambientMemoryEnabled: (process.env.AMBIENT_MEMORY_ENABLED || 'true').toLowerCase() === 'true',
   logInteractions: (process.env.LOG_INTERACTIONS || 'true').toLowerCase() === 'true',
   // Permisos por grupo: especifica qué funcionalidades están permitidas
   groupPermissions: {

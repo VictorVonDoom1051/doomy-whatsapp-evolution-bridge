@@ -25,6 +25,8 @@ Doomy Oficina API
 - Filtro por grupos autorizados.
 - Rate limit por usuario.
 - Memoria temporal por grupo.
+- Memoria ambiental de conversaciones recientes sin responder automáticamente.
+- Reacciones naturales con 👍, ✅ y 👀 cuando no hace falta enviar texto.
 - Roles por usuario.
 - Logs de interacciones.
 - Detección de intención/herramienta: inventario, cotizaciones, agenda, CRM, PDF, Excel.
@@ -57,6 +59,10 @@ WEBHOOK_SECRET=coloca_un_secreto_largo
 BOT_NAME=Doomy
 ALLOWED_GROUP_IDS=
 ADMIN_USER_IDS=
+
+AMBIENT_MEMORY_ENABLED=true
+MEMORY_MAX_MESSAGES=30
+MEMORY_TTL_MINUTES=180
 ```
 
 ## Flujo de uso

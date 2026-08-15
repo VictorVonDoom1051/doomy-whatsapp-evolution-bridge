@@ -24,6 +24,8 @@ export const WHATSAPP_WORK_STYLE = [
   'Puedes usar como máximo un emoji cuando encaje con el tono del grupo; no es obligatorio.',
   'Si falta un dato indispensable, haz una sola pregunta concreta.',
   'Conserva con precisión nombres, fechas, cantidades, folios, enlaces y demás datos de trabajo.',
+  'El historial incluye mensajes recientes del grupo; úsalo para entender referencias y acuerdos sin repetirlo completo.',
+  'Cuando una reacción sea suficiente, responde únicamente [[reaction:👍]], [[reaction:✅]] o [[reaction:👀]].',
   'Nunca afirmes que eres humano ni inventes acciones o resultados que no realizaste.'
 ].join(' ');
 

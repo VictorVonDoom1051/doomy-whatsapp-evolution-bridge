@@ -5,12 +5,13 @@ import { RateLimiter } from '../utils/rateLimiter.js';
 import { detectToolHint } from '../utils/toolHint.js';
 import { conversationMemory } from './conversationMemory.js';
 import { askDoomy } from './doomyApi.js';
-import { sendPresence, sendText } from './evolutionApi.js';
+import { sendPresence, sendText, trySendReaction } from './evolutionApi.js';
 import { logInteraction } from './interactionLog.js';
 import { roleService } from './roleService.js';
 import { runLocalPlugin } from '../plugins/registry.js';
 import { canProcessMessage, getGroupPermissions } from './permissionService.js';
 import { logger } from '../utils/logger.js';
+import { parseDoomyResponse } from '../utils/reaction.js';
 
 const processed = new Set<string>();
 const limiter = new RateLimiter(config.rateLimitWindowSeconds * 1000, config.rateLimitMaxMessages);
@@ -33,7 +34,20 @@ export async function processMessage(msg: NormalizedMessage) {
     logger.info({ groupId: msg.remoteJid, quotedId: msg.quotedMessageId }, 'Reply detectado sin trigger');
   }
 
-  if (!activation.active) return;
+  if (!activation.active) {
+    const ambientText = msg.text.trim();
+    if (config.ambientMemoryEnabled && ambientText) {
+      conversationMemory.add(msg.remoteJid, {
+        role: 'user',
+        content: ambientText,
+        at: new Date().toISOString(),
+        senderId: msg.senderId,
+        senderName: msg.senderName,
+        source: 'ambient'
+      });
+    }
+    return;
+  }
   const cleanText = activation.cleanText || (msg.hasMedia ? 'Analiza el adjunto enviado.' : '');
   if (!cleanText.trim()) {
     logger.warn({ groupId: msg.remoteJid, text: msg.text }, 'Mensaje vacío después de activación');
@@ -65,7 +79,7 @@ export async function processMessage(msg: NormalizedMessage) {
     await sendPresence(msg.remoteJid, 'composing');
     const toolHint = detectToolHint(cleanText);
     const history = conversationMemory.get(msg.remoteJid);
-    conversationMemory.add(msg.remoteJid, { role: 'user', content: cleanText, at: new Date().toISOString(), senderId: msg.senderId, senderName: msg.senderName });
+    conversationMemory.add(msg.remoteJid, { role: 'user', content: cleanText, at: new Date().toISOString(), senderId: msg.senderId, senderName: msg.senderName, source: 'direct' });
 
     const answer = await askDoomy({
       message: cleanText,
@@ -78,9 +92,18 @@ export async function processMessage(msg: NormalizedMessage) {
       raw: msg.hasMedia ? msg.raw : undefined
     });
 
-    conversationMemory.add(msg.remoteJid, { role: 'assistant', content: answer, at: new Date().toISOString() });
-    await sendText(msg.remoteJid, answer);
-    logInteraction({ at: new Date().toISOString(), groupId: msg.remoteJid, senderId: msg.senderId, senderName: msg.senderName, question: cleanText, answer, toolHint, ms: Date.now() - started });
+    const response = parseDoomyResponse(answer);
+    const memoryAnswer = response.kind === 'reaction' ? `[Reacción ${response.reaction}]` : response.text;
+    conversationMemory.add(msg.remoteJid, { role: 'assistant', content: memoryAnswer, at: new Date().toISOString(), source: 'assistant' });
+
+    if (response.kind === 'reaction') {
+      const sent = await trySendReaction(msg.remoteJid, msg.messageId, response.reaction);
+      if (!sent) await sendText(msg.remoteJid, response.reaction);
+    } else {
+      await sendText(msg.remoteJid, response.text);
+    }
+
+    logInteraction({ at: new Date().toISOString(), groupId: msg.remoteJid, senderId: msg.senderId, senderName: msg.senderName, question: cleanText, answer: memoryAnswer, toolHint, ms: Date.now() - started });
   } catch (err) {
     const errMsg = err instanceof Error ? err.message : String(err);
     logger.error({ err, errMsg, groupId: msg.remoteJid, senderId: msg.senderId }, 'Error procesando mensaje');

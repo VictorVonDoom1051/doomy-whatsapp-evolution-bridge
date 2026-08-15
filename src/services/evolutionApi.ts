@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { config } from '../config.js';
 import { splitMessage } from '../utils/text.js';
+import { logger } from '../utils/logger.js';
 
 const client = axios.create({
   baseURL: config.evolution.apiUrl,
@@ -24,6 +25,23 @@ export async function sendPresence(remoteJid: string, presence: 'composing' | 'p
       presence
     });
   } catch { /* opcional, no romper flujo */ }
+}
+
+export async function trySendReaction(remoteJid: string, messageId: string, reaction: string): Promise<boolean> {
+  try {
+    await client.post(`/message/sendReaction/${config.evolution.instance}`, {
+      key: {
+        remoteJid,
+        fromMe: false,
+        id: messageId
+      },
+      reaction
+    });
+    return true;
+  } catch (err) {
+    logger.warn({ err, remoteJid, messageId }, 'Evolution API no pudo enviar la reacción');
+    return false;
+  }
 }
 
 export async function setWebhook() {
