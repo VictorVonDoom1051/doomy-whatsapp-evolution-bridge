@@ -168,6 +168,25 @@ OWNER_USER_IDS=5213312345678@s.whatsapp.net,523312345678@s.whatsapp.net
 
 Los demás chats privados se ignoran.
 
+### Asistente personal
+
+En el chat privado del propietario, Doomy puede guardar recordatorios, citas, compras y mandados:
+
+```txt
+Recuérdame mañana a las 9 llamar a Juan
+Agenda dentista el viernes a las 5 pm
+Agrega leche y café a la lista de compras
+¿Qué hay en la lista de compras?
+Agrega recoger el paquete a mandados
+¿Qué pendientes tengo?
+```
+
+Las citas generan avisos 24 horas antes, una hora antes y al momento. Los recordatorios
+se envían de forma proactiva al chat privado. Para conservar los datos entre despliegues,
+monta un volumen de Railway en `/app/data`. Opcionalmente puedes cambiar la ruta con
+`PERSONAL_DATA_PATH`; el programador se ejecuta cada 30 segundos y puede ajustarse con
+`PERSONAL_SCHEDULER_INTERVAL_SECONDS`.
+
 ## Producción
 
 Recomendado:

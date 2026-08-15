@@ -26,6 +26,7 @@ export const config = {
   allowedGroupIds: list(process.env.ALLOWED_GROUP_IDS),
   adminUserIds: list(process.env.ADMIN_USER_IDS),
   ownerUserIds: list(process.env.OWNER_USER_IDS),
+  personalSchedulerIntervalSeconds: num(process.env.PERSONAL_SCHEDULER_INTERVAL_SECONDS, 30),
   webhookSecret: process.env.WEBHOOK_SECRET || '',
   rateLimitWindowSeconds: num(process.env.RATE_LIMIT_WINDOW_SECONDS, 20),
   rateLimitMaxMessages: num(process.env.RATE_LIMIT_MAX_MESSAGES, 5),

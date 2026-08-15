@@ -1,4 +1,5 @@
 import type { DoomyPlugin } from './types.js';
+import { handlePersonalCommand } from '../services/personalAssistant.js';
 
 const plugins: DoomyPlugin[] = [
   {
@@ -14,6 +15,10 @@ const plugins: DoomyPlugin[] = [
 ];
 
 export async function runLocalPlugin(text: string, ctx: { groupId: string; senderId: string; role: string }) {
+  if (!ctx.groupId.endsWith('@g.us') && ctx.role === 'admin') {
+    const personal = await handlePersonalCommand(text, ctx.groupId);
+    if (personal.handled) return personal;
+  }
   const plugin = plugins.find(p => p.match(text));
   if (!plugin) return { handled: false };
   return plugin.handle(text, ctx);
