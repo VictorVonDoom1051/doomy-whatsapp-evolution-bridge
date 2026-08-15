@@ -158,6 +158,8 @@ export async function processMessage(msg: NormalizedMessage) {
       userMessage = 'Error de autenticación con Doomy Oficina. Contacta al administrador.';
     } else if (errMsg.includes('429')) {
       userMessage = 'Demasiadas solicitudes. Espera un momento y vuelve a intentar.';
+    } else if (/adjunto|archivo supera|extraer texto del PDF|ANTHROPIC_API_KEY|interpretar archivos|interpretación de la imagen/i.test(errMsg)) {
+      userMessage = errMsg;
     }
 
     try {
