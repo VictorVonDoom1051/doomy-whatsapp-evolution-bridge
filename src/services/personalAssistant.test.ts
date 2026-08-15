@@ -41,3 +41,15 @@ test('detecta un recordatorio aunque exista una frase antes de la orden', () => 
   assert.equal(parsed?.title, 'revisar la campaña de Megacable para que no se me olvide');
   assert.equal(parsed?.date.toISOString(), '2026-08-15T16:05:00.000Z');
 });
+
+test('interpreta recordatorios relativos en meses', () => {
+  const parsed = parseSpanishDateTime('en 2 meses renovar el dominio', now);
+  assert.equal(parsed?.title, 'renovar el dominio');
+  assert.equal(parsed?.date.toISOString(), '2026-10-15T16:00:00.000Z');
+});
+
+test('interpreta un recordatorio mensual con día y hora', () => {
+  const parsed = parseSpanishDateTime('cada mes el día 20 a las 9 am pagar la tarjeta', now);
+  assert.equal(parsed?.title, 'pagar la tarjeta');
+  assert.equal(parsed?.date.toISOString(), '2026-08-20T15:00:00.000Z');
+});
