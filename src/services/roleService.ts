@@ -5,7 +5,7 @@ export type Role = 'admin' | 'supervisor' | 'ventas' | 'invitado';
 class RoleService {
   private roles = new Map<string, Role>();
   constructor(){
-    for (const id of config.adminUserIds) this.roles.set(id, 'admin');
+    for (const id of [...config.adminUserIds, ...config.ownerUserIds]) this.roles.set(id, 'admin');
     const file = path.join('data', 'roles.json');
     if (fs.existsSync(file)) {
       const json = JSON.parse(fs.readFileSync(file, 'utf8')) as Record<string, Role>;

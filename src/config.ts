@@ -25,6 +25,7 @@ export const config = {
   activationWords: list(process.env.ACTIVATION_WORDS) || ['@Doomy', 'Doomy', 'oye Doomy', '/doom'],
   allowedGroupIds: list(process.env.ALLOWED_GROUP_IDS),
   adminUserIds: list(process.env.ADMIN_USER_IDS),
+  ownerUserIds: list(process.env.OWNER_USER_IDS),
   webhookSecret: process.env.WEBHOOK_SECRET || '',
   rateLimitWindowSeconds: num(process.env.RATE_LIMIT_WINDOW_SECONDS, 20),
   rateLimitMaxMessages: num(process.env.RATE_LIMIT_MAX_MESSAGES, 5),

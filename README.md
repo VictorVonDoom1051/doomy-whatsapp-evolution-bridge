@@ -155,6 +155,19 @@ Roles sugeridos:
 - `ventas`
 - `invitado`
 
+## Chat privado del propietario
+
+Para permitir mensajes privados únicamente al propietario, configura `OWNER_USER_IDS`
+con uno o más identificadores separados por coma. El propietario se trata como `admin`,
+sus mensajes privados no requieren escribir “Doomy” y conservan acceso completo a las
+funciones que exponga Doomy Oficina, incluido Home Assistant.
+
+```env
+OWNER_USER_IDS=5213312345678@s.whatsapp.net,523312345678@s.whatsapp.net
+```
+
+Los demás chats privados se ignoran.
+
 ## Producción
 
 Recomendado:

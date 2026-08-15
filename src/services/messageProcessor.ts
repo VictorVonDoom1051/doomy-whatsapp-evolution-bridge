@@ -18,15 +18,19 @@ const limiter = new RateLimiter(config.rateLimitWindowSeconds * 1000, config.rat
 
 export async function processMessage(msg: NormalizedMessage) {
   if (msg.fromMe) return;
-  if (!msg.isGroup) return;
+  const isOwnerDirectMessage = !msg.isGroup && isConfiguredOwner(msg.senderId, msg.remoteJid);
+  if (!msg.isGroup && !isOwnerDirectMessage) return;
   if (processed.has(msg.messageId)) return;
   processed.add(msg.messageId);
   if (processed.size > 5000) processed.clear();
 
-  if (config.allowedGroupIds.length && !config.allowedGroupIds.includes(msg.remoteJid)) return;
+  if (msg.isGroup && config.allowedGroupIds.length && !config.allowedGroupIds.includes(msg.remoteJid)) return;
 
   // Detectar activación: por trigger o por reply a un mensaje de Doomy
   let activation = extractActivation(msg.text || '');
+  if (isOwnerDirectMessage && !activation.active) {
+    activation = { active: true, cleanText: msg.text || '' };
+  }
   const isReplyToDoomy = msg.isReply && conversationMemory.isReplyToAssistant(
     msg.remoteJid,
     msg.quotedText,
@@ -153,4 +157,21 @@ export async function processMessage(msg: NormalizedMessage) {
   } finally {
     await sendPresence(msg.remoteJid, 'paused').catch(() => {});
   }
+}
+
+export function isConfiguredOwner(...identifiers: string[]): boolean {
+  const configured = new Set(config.ownerUserIds.flatMap(ownerAliases));
+  return identifiers.flatMap(ownerAliases).some(identifier => configured.has(identifier));
+}
+
+function ownerAliases(value: string): string[] {
+  const raw = (value || '').trim().toLowerCase();
+  const digits = raw.split('@')[0].replace(/\D/g, '');
+  if (!digits) return raw ? [raw] : [];
+
+  const aliases = new Set([raw, digits]);
+  // Evolution/WhatsApp puede representar números mexicanos con 52 o con el 1 histórico (521).
+  if (digits.startsWith('521') && digits.length === 13) aliases.add(`52${digits.slice(3)}`);
+  if (digits.startsWith('52') && !digits.startsWith('521') && digits.length === 12) aliases.add(`521${digits.slice(2)}`);
+  return [...aliases];
 }
