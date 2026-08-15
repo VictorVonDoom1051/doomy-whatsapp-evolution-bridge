@@ -5,7 +5,7 @@ import { RateLimiter } from '../utils/rateLimiter.js';
 import { detectToolHint } from '../utils/toolHint.js';
 import { conversationMemory } from './conversationMemory.js';
 import { askDoomy } from './doomyApi.js';
-import { sendPresence, sendText } from './evolutionApi.js';
+import { sendDocument, sendPresence, sendText } from './evolutionApi.js';
 import { logInteraction } from './interactionLog.js';
 import { roleService } from './roleService.js';
 import { runLocalPlugin } from '../plugins/registry.js';
@@ -83,9 +83,18 @@ export async function processMessage(msg: NormalizedMessage) {
   try {
     if (msg.hasMedia) {
       await sendPresence(msg.remoteJid, 'composing');
-      const media = await interpretMedia(msg.raw, cleanText);
+      const media = await interpretMedia(msg.raw, cleanText, msg.remoteJid);
       if (media.kind === 'image') {
         await sendText(msg.remoteJid, media.response);
+        return;
+      }
+      if (media.kind === 'storedSpreadsheet') {
+        await sendText(msg.remoteJid, media.response);
+        return;
+      }
+      if (media.kind === 'comparison') {
+        await sendText(msg.remoteJid, media.response);
+        await sendDocument(msg.remoteJid, media.base64, media.fileName, 'Resultado de la comparación de folios');
         return;
       }
       cleanText = media.enrichedMessage;
@@ -158,7 +167,7 @@ export async function processMessage(msg: NormalizedMessage) {
       userMessage = 'Error de autenticación con Doomy Oficina. Contacta al administrador.';
     } else if (errMsg.includes('429')) {
       userMessage = 'Demasiadas solicitudes. Espera un momento y vuelve a intentar.';
-    } else if (/adjunto|archivo supera|extraer texto del PDF|ANTHROPIC_API_KEY|interpretar archivos|interpretación de la imagen/i.test(errMsg)) {
+    } else if (/adjunto|archivo supera|extraer texto del PDF|ANTHROPIC_API_KEY|interpretar archivos|interpretación de la imagen|Excel|folio/i.test(errMsg)) {
       userMessage = errMsg;
     }
 
