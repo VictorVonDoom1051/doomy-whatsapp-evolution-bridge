@@ -29,28 +29,44 @@ export const WHATSAPP_WORK_STYLE = [
   'Nunca afirmes que eres humano ni inventes acciones o resultados que no realizaste.'
 ].join(' ');
 
+export const WHATSAPP_OWNER_STYLE = [
+  'Estás conversando por WhatsApp privado con el propietario y administrador de VonverIA.',
+  'Este chat no es un grupo ni pertenece a un cliente.',
+  'La empresa del propietario es VonverIA; nombres como NAHVI o Nadia corresponden a clientes o datos de trabajo y nunca definen su identidad o empresa.',
+  'Trátalo como administrador con acceso completo a cotizaciones, catálogo, tickets, clientes, Home Assistant y Frigate.',
+  'Responde en español mexicano natural, directo y breve, como su asistente personal de confianza.',
+  'No repitas la pregunta, no inventes datos y distingue siempre entre el propietario, VonverIA y sus clientes.',
+  'Cuando una reacción sea suficiente, responde únicamente [[reaction:👍]], [[reaction:✅]] o [[reaction:👀]].'
+].join(' ');
+
 export interface DoomyApiPayload extends DoomyRequest {
   originalMessage: string;
-  channel: 'whatsapp_work_group';
-  responseStyle: 'natural_coworker';
+  channel: 'whatsapp_work_group' | 'whatsapp_owner_private';
+  responseStyle: 'natural_coworker' | 'natural_owner_assistant';
   styleInstructions: string;
 }
 
 export function buildDoomyApiPayload(payload: DoomyRequest): DoomyApiPayload {
   const sender = payload.senderName?.trim();
-  const speakerContext = sender ? `Escribe para responderle a ${sender} dentro del grupo.` : '';
+  const isGroup = payload.groupId.endsWith('@g.us');
+  const styleInstructions = isGroup ? WHATSAPP_WORK_STYLE : WHATSAPP_OWNER_STYLE;
+  const speakerContext = sender
+    ? isGroup
+      ? `Escribe para responderle a ${sender} dentro del grupo.`
+      : `El nombre visible del propietario es ${sender}; responde directamente para él.`
+    : '';
 
   return {
     ...payload,
     originalMessage: payload.message,
-    channel: 'whatsapp_work_group',
-    responseStyle: 'natural_coworker',
-    styleInstructions: WHATSAPP_WORK_STYLE,
+    channel: isGroup ? 'whatsapp_work_group' : 'whatsapp_owner_private',
+    responseStyle: isGroup ? 'natural_coworker' : 'natural_owner_assistant',
+    styleInstructions,
     message: [
       payload.message,
       '',
       '<contexto_interno_respuesta>',
-      WHATSAPP_WORK_STYLE,
+      styleInstructions,
       speakerContext,
       '</contexto_interno_respuesta>'
     ].filter(Boolean).join('\n')

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { buildDoomyApiPayload, WHATSAPP_WORK_STYLE, type DoomyRequest } from './doomyApi.js';
+import { buildDoomyApiPayload, WHATSAPP_OWNER_STYLE, WHATSAPP_WORK_STYLE, type DoomyRequest } from './doomyApi.js';
 
 function request(overrides: Partial<DoomyRequest> = {}): DoomyRequest {
   return {
@@ -44,4 +44,19 @@ test('conserva intactos los datos que usa el bridge para herramientas y memoria'
   assert.equal(payload.toolHint, 'cotizaciones');
   assert.equal(payload.history, history);
   assert.deepEqual(payload.raw, { attachment: true });
+});
+
+test('separa el chat privado del propietario del contexto de clientes y grupos', () => {
+  const payload = buildDoomyApiPayload(request({
+    groupId: '523310917819@s.whatsapp.net',
+    senderId: '523310917819@s.whatsapp.net',
+    message: '¿Quién soy y qué permisos tengo?'
+  }));
+
+  assert.equal(payload.channel, 'whatsapp_owner_private');
+  assert.equal(payload.responseStyle, 'natural_owner_assistant');
+  assert.equal(payload.styleInstructions, WHATSAPP_OWNER_STYLE);
+  assert.match(payload.message, /propietario y administrador de VonverIA/);
+  assert.match(payload.message, /no es un grupo ni pertenece a un cliente/);
+  assert.match(payload.message, /NAHVI.*clientes/);
 });
