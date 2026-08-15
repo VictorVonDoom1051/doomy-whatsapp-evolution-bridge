@@ -5,7 +5,7 @@ import { config } from './config.js';
 import { logger } from './utils/logger.js';
 import { webhookRouter } from './routes/webhook.js';
 import { setWebhook } from './services/evolutionApi.js';
-import { startPersonalScheduler, stopPersonalScheduler } from './services/personalScheduler.js';
+import { closePersonalScheduler, startPersonalScheduler } from './services/personalScheduler.js';
 
 const app = express();
 
@@ -47,9 +47,9 @@ const server = app.listen(config.port, () => {
 });
 
 // Apagado ordenado: Railway envía SIGTERM antes de reiniciar/redesplegar el servicio.
-function shutdown(signal: string) {
+async function shutdown(signal: string) {
   logger.info(`Recibida señal ${signal}, cerrando servidor...`);
-  stopPersonalScheduler();
+  await closePersonalScheduler().catch(err => logger.error({ err }, 'No se pudo cerrar el almacenamiento personal'));
   server.close(() => {
     logger.info('Servidor cerrado correctamente.');
     process.exit(0);

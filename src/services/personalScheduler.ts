@@ -37,3 +37,8 @@ export function stopPersonalScheduler() {
   if (timer) clearInterval(timer);
   timer = undefined;
 }
+
+export async function closePersonalScheduler() {
+  stopPersonalScheduler();
+  await personalStore.close();
+}

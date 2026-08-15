@@ -77,6 +77,19 @@ async function addTimed(ownerId: string, kind: PersonalItemKind, expression: str
 }
 
 export function parseSpanishDateTime(expression: string, now = new Date()): { title: string; date: Date } | null {
+  const relativePattern = '(?:en|dentro de)\\s+(\\d+)\\s+(minutos?|horas?|d[ií]as?)';
+  const relativeFirst = expression.match(new RegExp(`^${relativePattern}\\s+(.+)$`, 'i'));
+  const relativeLast = expression.match(new RegExp(`^(.+?)\\s+${relativePattern}$`, 'i'));
+  if (relativeFirst || relativeLast) {
+    const match = relativeFirst || relativeLast!;
+    const amount = Number(relativeFirst ? match[1] : match[2]);
+    const unit = normalize(relativeFirst ? match[2] : match[3]);
+    const title = (relativeFirst ? match[3] : match[1]).trim();
+    if (!amount || !title) return null;
+    const multiplier = unit.startsWith('minuto') ? 60_000 : unit.startsWith('hora') ? 3_600_000 : 86_400_000;
+    return { title, date: new Date(now.getTime() + amount * multiplier) };
+  }
+
   const dayPattern = '(hoy|mañana|pasado mañana|el lunes|el martes|el miércoles|el miercoles|el jueves|el viernes|el sábado|el sabado|el domingo|todos los días|todos los dias|cada día|cada dia)';
   const timePattern = '(?:a las?|a la)\\s+(\\d{1,2})(?::(\\d{2}))?\\s*(am|pm)?';
   const first = expression.match(new RegExp(`^${dayPattern}\\s+${timePattern}\\s+(.+)$`, 'i'));

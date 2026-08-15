@@ -174,6 +174,7 @@ En el chat privado del propietario, Doomy puede guardar recordatorios, citas, co
 
 ```txt
 Recuérdame mañana a las 9 llamar a Juan
+Recuérdame en 5 minutos revisar el horno
 Agenda dentista el viernes a las 5 pm
 Agrega leche y café a la lista de compras
 ¿Qué hay en la lista de compras?

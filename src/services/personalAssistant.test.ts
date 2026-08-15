@@ -19,3 +19,15 @@ test('interpreta citas con fecha al final', () => {
 test('pide aclaración cuando falta la hora', () => {
   assert.equal(parseSpanishDateTime('mañana llamar a Juan', now), null);
 });
+
+test('interpreta recordatorios relativos en minutos', () => {
+  const parsed = parseSpanishDateTime('en 5 minutos revisar el horno', now);
+  assert.equal(parsed?.title, 'revisar el horno');
+  assert.equal(parsed?.date.toISOString(), '2026-08-15T16:05:00.000Z');
+});
+
+test('interpreta el tiempo relativo al final de la petición', () => {
+  const parsed = parseSpanishDateTime('tomar agua en 2 horas', now);
+  assert.equal(parsed?.title, 'tomar agua');
+  assert.equal(parsed?.date.toISOString(), '2026-08-15T18:00:00.000Z');
+});
