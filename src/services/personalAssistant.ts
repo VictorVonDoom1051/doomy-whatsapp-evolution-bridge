@@ -83,7 +83,7 @@ async function addTimed(ownerId: string, kind: PersonalItemKind, expression: str
 }
 
 export function parseSpanishDateTime(expression: string, now = new Date()): { title: string; date: Date } | null {
-  const relativePattern = '(?:en|dentro de)\\s+(\\d+)\\s+(minutos?|horas?|d[ií]as?)';
+  const relativePattern = '(?:en|dentro de)\\s+(\\d+)\\s+(minutos?|horas?|d[ií]as?|mes(?:es)?)';
   const relativeFirst = expression.match(new RegExp(`^${relativePattern}\\s+(.+)$`, 'i'));
   const relativeLast = expression.match(new RegExp(`^(.+?)\\s+${relativePattern}$`, 'i'));
   if (relativeFirst || relativeLast) {
@@ -92,8 +92,37 @@ export function parseSpanishDateTime(expression: string, now = new Date()): { ti
     const unit = normalize(relativeFirst ? match[2] : match[3]);
     const title = (relativeFirst ? match[3] : match[1]).trim();
     if (!amount || !title) return null;
+    if (unit.startsWith('mes')) {
+      const date = new Date(now);
+      date.setUTCMonth(date.getUTCMonth() + amount);
+      return { title, date };
+    }
     const multiplier = unit.startsWith('minuto') ? 60_000 : unit.startsWith('hora') ? 3_600_000 : 86_400_000;
     return { title, date: new Date(now.getTime() + amount * multiplier) };
+  }
+
+  const monthlyPattern = expression.match(
+    /^(?:cada mes|mensualmente|todos los meses)(?:\\s+el)?(?:\\s+d[ií]a)?\\s+(\\d{1,2})\\s+(?:a las?|a la)\\s+(\\d{1,2})(?::(\\d{2}))?\\s*(am|pm)?\\s+(.+)$/i
+  ) || expression.match(
+    /^(.+?)\\s+(?:cada mes|mensualmente|todos los meses)(?:\\s+el)?(?:\\s+d[ií]a)?\\s+(\\d{1,2})\\s+(?:a las?|a la)\\s+(\\d{1,2})(?::(\\d{2}))?\\s*(am|pm)?$/i
+  );
+  if (monthlyPattern) {
+    const startsWithRecurrence = /^(?:cada mes|mensualmente|todos los meses)/i.test(expression);
+    const day = Number(startsWithRecurrence ? monthlyPattern[1] : monthlyPattern[2]);
+    let hour = Number(startsWithRecurrence ? monthlyPattern[2] : monthlyPattern[3]);
+    const minute = Number((startsWithRecurrence ? monthlyPattern[3] : monthlyPattern[4]) || 0);
+    const meridiem = (startsWithRecurrence ? monthlyPattern[4] : monthlyPattern[5])?.toLowerCase();
+    const title = (startsWithRecurrence ? monthlyPattern[5] : monthlyPattern[1]).trim();
+    if (meridiem === 'pm' && hour < 12) hour += 12;
+    if (meridiem === 'am' && hour === 12) hour = 0;
+    if (day < 1 || day > 31 || hour > 23 || minute > 59 || !title) return null;
+    const local = localDateParts(now);
+    let date = monthlyDate(local.year, local.month, day, hour, minute);
+    if (date.getTime() <= now.getTime()) {
+      const nextMonth = new Date(Date.UTC(local.year, local.month, 1));
+      date = monthlyDate(nextMonth.getUTCFullYear(), nextMonth.getUTCMonth() + 1, day, hour, minute);
+    }
+    return { title, date };
   }
 
   const dayPattern = '(hoy|mañana|pasado mañana|el lunes|el martes|el miércoles|el miercoles|el jueves|el viernes|el sábado|el sabado|el domingo|todos los días|todos los dias|cada día|cada dia)';
@@ -154,6 +183,11 @@ function addLocalDays(value: { year: number; month: number; day: number }, days:
   return { year: date.getUTCFullYear(), month: date.getUTCMonth() + 1, day: date.getUTCDate() };
 }
 
+function monthlyDate(year: number, month: number, requestedDay: number, hour: number, minute: number): Date {
+  const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  return zonedTimeToUtc(year, month, Math.min(requestedDay, lastDay), hour, minute);
+}
+
 function zonedTimeToUtc(year: number, month: number, day: number, hour: number, minute: number): Date {
   const guess = Date.UTC(year, month - 1, day, hour, minute);
   const formatted = new Intl.DateTimeFormat('en-CA', {
@@ -169,7 +203,7 @@ function parseRecurrence(value: string): Recurrence | undefined {
   const normalized = normalize(value);
   if (/todos los dias|cada dia/.test(normalized)) return 'daily';
   if (/cada semana|semanalmente/.test(normalized)) return 'weekly';
-  if (/cada mes|mensualmente/.test(normalized)) return 'monthly';
+  if (/cada mes|mensual(?:mente)?|todos los meses/.test(normalized)) return 'monthly';
   return undefined;
 }
 
