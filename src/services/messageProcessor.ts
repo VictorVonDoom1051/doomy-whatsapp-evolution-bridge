@@ -12,6 +12,7 @@ import { runLocalPlugin } from '../plugins/registry.js';
 import { canProcessMessage, getGroupPermissions } from './permissionService.js';
 import { logger } from '../utils/logger.js';
 import { parseDoomyResponse, selectAcknowledgementReaction } from '../utils/reaction.js';
+import { interpretMedia } from './mediaInterpreter.js';
 
 const processed = new Set<string>();
 const limiter = new RateLimiter(config.rateLimitWindowSeconds * 1000, config.rateLimitMaxMessages);
@@ -73,13 +74,23 @@ export async function processMessage(msg: NormalizedMessage) {
     }
     return;
   }
-  const cleanText = activation.cleanText || (msg.hasMedia ? 'Analiza el adjunto enviado.' : '');
+  let cleanText = activation.cleanText || (msg.hasMedia ? 'Analiza el adjunto enviado.' : '');
   if (!cleanText.trim()) {
     logger.warn({ groupId: msg.remoteJid, text: msg.text }, 'Mensaje vacío después de activación');
     return;
   }
 
   try {
+    if (msg.hasMedia) {
+      await sendPresence(msg.remoteJid, 'composing');
+      const media = await interpretMedia(msg.raw, cleanText);
+      if (media.kind === 'image') {
+        await sendText(msg.remoteJid, media.response);
+        return;
+      }
+      cleanText = media.enrichedMessage;
+    }
+
     // Validar permisos del grupo
     const permCheck = canProcessMessage(msg.remoteJid, cleanText);
     if (!permCheck.allowed) {
