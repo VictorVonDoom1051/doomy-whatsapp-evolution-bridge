@@ -21,7 +21,8 @@
     "pdf-parse": "^1.1.1",
     "pg": "^8.23.0",
     "pino": "^9.6.0",
-    "pino-http": "^10.4.0"
+    "pino-http": "^10.4.0",
+    "xlsx-js-style": "^1.2.0"
   },
   "devDependencies": {
     "@types/express": "^5.0.0",
