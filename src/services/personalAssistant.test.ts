@@ -58,3 +58,13 @@ test('detecta recordatorios compartidos escritos como recuérdanos', () => {
   const expression = extractReminderExpression('Doomy recuérdanos en 5 minutos revisar el deploy');
   assert.equal(expression, 'en 5 minutos revisar el deploy');
 });
+
+test('detecta órdenes escritas como recuérdale y recuérdales', () => {
+  const singular = extractReminderExpression('Doomy recuérdale a Luz en 2 horas revisar la cotización');
+  assert.equal(singular, 'a Luz en 2 horas revisar la cotización');
+  assert.equal(parseSpanishDateTime(singular!, now)?.title, 'a Luz revisar la cotización');
+  assert.equal(
+    extractReminderExpression('Doomy recuerdales mañana a las 9 enviar el reporte'),
+    'mañana a las 9 enviar el reporte'
+  );
+});
