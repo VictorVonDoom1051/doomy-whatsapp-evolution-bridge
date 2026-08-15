@@ -24,6 +24,7 @@ function extractTextFromMessage(msg: any): string {
     || msg?.extendedTextMessage?.text
     || msg?.imageMessage?.caption
     || msg?.videoMessage?.caption
+    || msg?.documentMessage?.caption
     || '';
 }
 
@@ -51,11 +52,17 @@ export function normalizeEvolutionMessage(body: EvolutionWebhook): NormalizedMes
   if (!remoteJid) return null;
   const participant = key.participant || data.participant || data.sender || remoteJid;
   const text = extractText(data);
-  const messageType = data.messageType || data.message?.messageType || data.type;
-  const hasMedia = Boolean(messageType && !['conversation', 'extendedTextMessage'].includes(messageType));
+  const unwrapped = unwrapMessage(data);
+  const inferredMediaType = unwrapped?.imageMessage ? 'imageMessage'
+    : unwrapped?.documentMessage ? 'documentMessage'
+      : unwrapped?.videoMessage ? 'videoMessage'
+        : unwrapped?.audioMessage ? 'audioMessage'
+          : undefined;
+  const messageType = data.messageType || data.message?.messageType || data.type || inferredMediaType;
+  const hasMedia = Boolean(inferredMediaType || (messageType && !['conversation', 'extendedTextMessage'].includes(messageType)));
 
   // Detectar si es un reply/quote a otro mensaje
-  const message = unwrapMessage(data);
+  const message = unwrapped;
   const contextInfo = extractContextInfo(message) || data.contextInfo;
   const quotedMsg = contextInfo?.quotedMessage;
   const isReply = Boolean(quotedMsg || contextInfo?.stanzaId);
