@@ -27,6 +27,8 @@ export const config = {
   },
   mediaMaxBytes: num(process.env.MEDIA_MAX_BYTES, 10 * 1024 * 1024),
   pdfMaxCharacters: num(process.env.PDF_MAX_CHARACTERS, 60000),
+  comparisonDataPath: process.env.COMPARISON_DATA_PATH || 'data/comparisons',
+  comparisonTtlHours: num(process.env.COMPARISON_TTL_HOURS, 24),
   botName: process.env.BOT_NAME || 'Doomy',
   activationWords: list(process.env.ACTIVATION_WORDS) || ['@Doomy', 'Doomy', 'oye Doomy', '/doom'],
   allowedGroupIds: list(process.env.ALLOWED_GROUP_IDS),
