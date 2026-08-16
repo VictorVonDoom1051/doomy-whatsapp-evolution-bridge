@@ -1,5 +1,6 @@
 import type { DoomyPlugin } from './types.js';
 import { handlePersonalCommand } from '../services/personalAssistant.js';
+import { handleGoogleCommand } from '../services/googleWorkspace.js';
 
 const plugins: DoomyPlugin[] = [
   {
@@ -15,6 +16,11 @@ const plugins: DoomyPlugin[] = [
 ];
 
 export async function runLocalPlugin(text: string, ctx: { groupId: string; senderId: string; role: string }) {
+  // Gmail, Drive y el calendario personal sólo se exponen en el chat privado del propietario.
+  if (ctx.role === 'admin' && !ctx.groupId.endsWith('@g.us')) {
+    const workspace = await handleGoogleCommand(text, ctx.groupId);
+    if (workspace.handled) return workspace;
+  }
   // En privado sólo el propietario puede usar la agenda. En los grupos permitidos,
   // la agenda es compartida y los avisos regresan al mismo grupo que los creó.
   if (ctx.groupId.endsWith('@g.us') || ctx.role === 'admin') {

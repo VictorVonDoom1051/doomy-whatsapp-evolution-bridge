@@ -6,6 +6,8 @@ import { logger } from './utils/logger.js';
 import { webhookRouter } from './routes/webhook.js';
 import { setWebhook } from './services/evolutionApi.js';
 import { closePersonalScheduler, startPersonalScheduler } from './services/personalScheduler.js';
+import { googleOAuthRouter } from './routes/googleOAuth.js';
+import { googleTokenStore } from './services/googleTokenStore.js';
 
 const app = express();
 
@@ -20,6 +22,7 @@ app.use(pinoHttp({ logger }));
 app.get('/', (_req, res) => res.json({ ok: true, service: 'doomy-whatsapp-evolution-bridge' }));
 app.get('/health', (_req, res) => res.json({ ok: true, timestamp: new Date().toISOString() }));
 app.use('/webhook', webhookRouter);
+app.use('/admin/google', googleOAuthRouter);
 
 app.post('/admin/setup-webhook', async (req, res) => {
   if (config.webhookSecret) {
@@ -50,6 +53,7 @@ const server = app.listen(config.port, () => {
 async function shutdown(signal: string) {
   logger.info(`Recibida señal ${signal}, cerrando servidor...`);
   await closePersonalScheduler().catch(err => logger.error({ err }, 'No se pudo cerrar el almacenamiento personal'));
+  await googleTokenStore.close().catch(err => logger.error({ err }, 'No se pudo cerrar Google Token Store'));
   server.close(() => {
     logger.info('Servidor cerrado correctamente.');
     process.exit(0);

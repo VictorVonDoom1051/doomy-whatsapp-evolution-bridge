@@ -54,6 +54,17 @@ EVOLUTION_API_KEY=tu_api_key
 EVOLUTION_INSTANCE=doomy-oficina
 
 DOOMY_API_URL=https://tu-doomy-oficina.com/api/doomy/chat
+
+# Google Workspace (OAuth)
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GOOGLE_REDIRECT_URI=https://TU-BRIDGE/admin/google/callback
+GOOGLE_CALENDAR_ID=primary
+GOOGLE_TASK_LIST_ID=@default
+GOOGLE_TIME_ZONE=America/Mexico_City
+DAILY_SUMMARY_ENABLED=true
+DAILY_SUMMARY_HOUR=8
+DAILY_SUMMARY_MINUTE=0
 DOOMY_API_KEY=tu_key_de_doomy
 
 WEBHOOK_SECRET=coloca_un_secreto_largo
@@ -106,6 +117,30 @@ curl -X POST "https://TU-BRIDGE/admin/setup-webhook?secret=TU_WEBHOOK_SECRET"
 ```
 
 El endpoint configurará Evolution API para enviar eventos a `/webhook/evolution`.
+
+## Conectar Google Workspace
+
+1. En Google Cloud crea un cliente OAuth de tipo **Web application**.
+2. Habilita Calendar API, Tasks API, Gmail API y Drive API.
+3. Registra como redirect URI exactamente `https://TU-BRIDGE/admin/google/callback`.
+4. Configura en Railway `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` y `GOOGLE_REDIRECT_URI`.
+5. Abre en el navegador:
+
+```txt
+https://TU-BRIDGE/admin/google/connect?secret=TU_WEBHOOK_SECRET
+```
+
+El refresh token queda cifrado en tránsito y se guarda en PostgreSQL cuando existe `DATABASE_URL`; no se envía por WhatsApp. Gmail y Drive sólo están disponibles en el chat privado del propietario. Crear citas o borradores requiere responder `confirmar`.
+
+Ejemplos:
+
+```txt
+Doomy, ¿qué tengo en la agenda hoy?
+Doomy, busca en Drive el plano de Nave 8
+Doomy, muéstrame mis correos sin leer
+Doomy, agrega revisar cotización Evans a Google Tasks
+Doomy, resumen del día
+```
 
 ## Contrato con Doomy Oficina
 

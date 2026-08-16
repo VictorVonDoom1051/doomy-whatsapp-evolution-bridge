@@ -25,6 +25,19 @@ export const config = {
     apiKey: process.env.ANTHROPIC_API_KEY || '',
     model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-5'
   },
+  google: {
+    clientId: process.env.GOOGLE_CLIENT_ID || '',
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+    redirectUri: process.env.GOOGLE_REDIRECT_URI || '',
+    refreshToken: process.env.GOOGLE_REFRESH_TOKEN || '',
+    tokenPath: process.env.GOOGLE_TOKEN_PATH || 'data/google-oauth-token.json',
+    calendarId: process.env.GOOGLE_CALENDAR_ID || 'primary',
+    taskListId: process.env.GOOGLE_TASK_LIST_ID || '@default',
+    timeZone: process.env.GOOGLE_TIME_ZONE || 'America/Mexico_City',
+    dailySummaryEnabled: (process.env.DAILY_SUMMARY_ENABLED || 'true').toLowerCase() === 'true',
+    dailySummaryHour: num(process.env.DAILY_SUMMARY_HOUR, 8),
+    dailySummaryMinute: num(process.env.DAILY_SUMMARY_MINUTE, 0)
+  },
   mediaMaxBytes: num(process.env.MEDIA_MAX_BYTES, 10 * 1024 * 1024),
   pdfMaxCharacters: num(process.env.PDF_MAX_CHARACTERS, 60000),
   comparisonDataPath: process.env.COMPARISON_DATA_PATH || 'data/comparisons',
