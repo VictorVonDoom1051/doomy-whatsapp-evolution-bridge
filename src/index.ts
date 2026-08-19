@@ -7,6 +7,7 @@ import { webhookRouter } from './routes/webhook.js';
 import { setWebhook } from './services/evolutionApi.js';
 import { closePersonalScheduler, startPersonalScheduler } from './services/personalScheduler.js';
 import { googleOAuthRouter } from './routes/googleOAuth.js';
+import { internalRouter } from './routes/internal.js';
 import { googleTokenStore } from './services/googleTokenStore.js';
 
 const app = express();
@@ -23,6 +24,7 @@ app.get('/', (_req, res) => res.json({ ok: true, service: 'doomy-whatsapp-evolut
 app.get('/health', (_req, res) => res.json({ ok: true, timestamp: new Date().toISOString() }));
 app.use('/webhook', webhookRouter);
 app.use('/admin/google', googleOAuthRouter);
+app.use('/api/internal', internalRouter);
 
 app.post('/admin/setup-webhook', async (req, res) => {
   if (config.webhookSecret) {

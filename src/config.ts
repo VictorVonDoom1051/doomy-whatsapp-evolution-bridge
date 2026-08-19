@@ -55,6 +55,7 @@ export const config = {
   memoryTtlMinutes: num(process.env.MEMORY_TTL_MINUTES, 180),
   ambientMemoryEnabled: (process.env.AMBIENT_MEMORY_ENABLED || 'true').toLowerCase() === 'true',
   logInteractions: (process.env.LOG_INTERACTIONS || 'true').toLowerCase() === 'true',
+  doomyWhatsappInternalKey: process.env.DOOMY_WHATSAPP_INTERNAL_KEY || '',
   // Permisos por grupo: especifica qué funcionalidades están permitidas
   groupPermissions: {
     'quotation_only': {
