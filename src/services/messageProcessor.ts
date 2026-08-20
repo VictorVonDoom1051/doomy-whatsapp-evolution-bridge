@@ -152,10 +152,24 @@ export async function processMessage(msg: NormalizedMessage) {
     const response = parseDoomyResponse(answer);
     const memoryAnswer = response.kind === 'reaction' ? `[Reacción ${response.reaction}]` : response.text;
 
+    // sendText con texto vacío no envía nada y no lanza error: sin estas dos
+    // líneas, "Doomy no contestó" era indistinguible de "Doomy contestó bien".
+    logger.info({
+      remoteJid: msg.remoteJid,
+      msDoomy: Date.now() - started,
+      largoRespuestaDoomy: (answer || '').length,
+      tipo: response.kind
+    }, 'Doomy respondió');
+
     if (response.kind === 'reaction') {
       await sendText(msg.remoteJid, response.reaction);
     } else {
       const sentMessageIds = await sendText(msg.remoteJid, response.text);
+      logger.info({
+        remoteJid: msg.remoteJid,
+        partesEnviadas: sentMessageIds.length,
+        largoTexto: (response.text || '').length
+      }, sentMessageIds.length ? 'Respuesta entregada a Evolution' : 'ATENCIÓN: no se envió ninguna parte (texto vacío)');
       conversationMemory.add(msg.remoteJid, {
         role: 'assistant',
         content: memoryAnswer,
