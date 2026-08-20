@@ -20,8 +20,20 @@ const limiter = new RateLimiter(config.rateLimitWindowSeconds * 1000, config.rat
 export async function processMessage(msg: NormalizedMessage) {
   if (msg.fromMe) return;
   const isOwnerDirectMessage = !msg.isGroup && isConfiguredOwner(msg.senderId, msg.remoteJid);
-  if (!msg.isGroup && !isOwnerDirectMessage) return;
-  if (processed.has(msg.messageId)) return;
+  if (!msg.isGroup && !isOwnerDirectMessage) {
+    // Antes esto descartaba el mensaje en silencio: sin log era indistinguible
+    // de "Doomy respondió bien", y costaba horas de diagnóstico a ciegas.
+    logger.warn({
+      senderId: msg.senderId,
+      remoteJid: msg.remoteJid,
+      ownerIdsConfigurados: config.ownerUserIds.length
+    }, 'Mensaje directo descartado: el remitente no está en OWNER_USER_IDS');
+    return;
+  }
+  if (processed.has(msg.messageId)) {
+    logger.info({ messageId: msg.messageId }, 'Mensaje duplicado ignorado');
+    return;
+  }
   processed.add(msg.messageId);
   if (processed.size > 5000) processed.clear();
 

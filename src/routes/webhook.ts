@@ -15,6 +15,23 @@ webhookRouter.post('/evolution', async (req, res) => {
   res.status(200).json({ ok: true });
 
   try {
+    // Los eventos CONNECTION_UPDATE no son mensajes: normalizeEvolutionMessage
+    // los descarta. Sin este log, que la sesión de WhatsApp se cayera (p. ej.
+    // "device_removed") era completamente invisible y Doomy simplemente dejaba
+    // de contestar sin dejar rastro.
+    const eventName = String((req.body as any)?.event || '').toLowerCase();
+    if (eventName.includes('connection')) {
+      const data = (req.body as any)?.data || {};
+      const state = data.state || data.connection;
+      const log = state === 'open' ? logger.info.bind(logger) : logger.warn.bind(logger);
+      log({
+        state,
+        statusReason: data.statusReason,
+        instance: (req.body as any)?.instance
+      }, `Conexión de WhatsApp: ${state || 'desconocida'}`);
+      return;
+    }
+
     const normalized = normalizeEvolutionMessage(req.body);
     if (!normalized) return;
 
