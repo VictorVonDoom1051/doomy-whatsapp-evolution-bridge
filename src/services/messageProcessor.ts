@@ -37,11 +37,17 @@ export async function processMessage(msg: NormalizedMessage) {
   processed.add(msg.messageId);
   if (processed.size > 5000) processed.clear();
 
-  if (msg.isGroup && config.allowedGroupIds.length && !config.allowedGroupIds.includes(msg.remoteJid)) return;
+  if (msg.isGroup && config.allowedGroupIds.length && !config.allowedGroupIds.includes(msg.remoteJid)) {
+    logger.warn({ remoteJid: msg.remoteJid }, 'Mensaje de grupo descartado: el grupo no está en ALLOWED_GROUP_IDS');
+    return;
+  }
 
   // Detectar activación: por trigger o por reply a un mensaje de Doomy
   let activation = extractActivation(msg.text || '');
-  if (isOwnerDirectMessage && !activation.active) {
+  // Los grupos de AUTO_ACTIVATE_GROUP_IDS se comportan como un chat directo:
+  // Doomy responde a todo sin exigir la palabra de activación.
+  const isAutoActivateGroup = msg.isGroup && config.autoActivateGroupIds.includes(msg.remoteJid);
+  if ((isOwnerDirectMessage || isAutoActivateGroup) && !activation.active) {
     activation = { active: true, cleanText: msg.text || '' };
   }
   const isReplyToDoomy = msg.isReply && conversationMemory.isReplyToAssistant(

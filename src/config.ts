@@ -45,6 +45,10 @@ export const config = {
   botName: process.env.BOT_NAME || 'Doomy',
   activationWords: list(process.env.ACTIVATION_WORDS) || ['@Doomy', 'Doomy', 'oye Doomy', '/doom'],
   allowedGroupIds: list(process.env.ALLOWED_GROUP_IDS),
+  // Grupos privados donde Doomy responde a TODO sin palabra de activación,
+  // igual que un chat directo del owner. Pensado para grupos de un solo
+  // usuario, creados como rodeo al bug de LID que rompe el 1-a-1.
+  autoActivateGroupIds: list(process.env.AUTO_ACTIVATE_GROUP_IDS),
   adminUserIds: list(process.env.ADMIN_USER_IDS),
   ownerUserIds: list(process.env.OWNER_USER_IDS),
   personalSchedulerIntervalSeconds: num(process.env.PERSONAL_SCHEDULER_INTERVAL_SECONDS, 30),
